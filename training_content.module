@@ -1,0 +1,167 @@
+<?php
+// $Id$
+
+/** 
+* Implements hook_help()
+*/
+function training_content_help($path, $arg) {
+  $output = '';
+  switch($path) {
+    case "admin/help#training_content":
+      $output = '<p>' . t("Provides the blocks necessary to provide Training Content for the Find Your Calling Facebook application.") . '</p>';
+      break;
+  }
+  return $output;
+}
+
+/* TODO: Implement hook_menu() to have a page callback on which to render the Quicktabs block
+   that loads the training content for each user by uid. */
+
+/**
+ * Implements hook_block().
+*/
+function training_content_block($op = 'list', $delta = 0, $edit = array()) {
+  if ($op == 'list') {
+    $blocks['tc_quicktab'] = array(
+      'info' => t('Training Content for User'),
+      'weight' => 0, 
+      'status' => 0, 
+      'cache' => BLOCK_NO_CACHE,
+    );
+    // load the first two terms from the cause/topic vocabulary (8)
+    //$tids = array(4238, 562, 6954);
+    /* $vid = 8;
+    $tids = taxonomy_tids_by_vocabulary($vid);
+    foreach($tids as $tid) {
+      $blocks['tcterm_' . $tid] = array(
+        'info' => t('Training Content: Term') . ' ' . $tid,
+        'weight' => 0, 
+        'status' => 0, 
+        'cache' => BLOCK_NO_CACHE,
+      ); 
+    } */
+    // TODO: see if block caching will work for these blocks or if the JS will break
+    return $blocks;
+  }
+  elseif ($op == 'view') {
+    if($delta == 'tc_quicktab') {
+      $block = array(
+       'subject' => t('Training Content'),
+        'content' => training_content_user_block(),
+      );
+    }
+    elseif(strpos($delta, 'tcterm') !== FALSE) {
+      $pieces = explode('_', $delta);
+      $tid = $pieces[1];
+      $block = array(
+        'subject' => t('Training Content'),
+        'content' => training_content_term_block($tid),
+      );
+    }
+    return $block;
+  }
+}
+
+// function to list tids will not be necessary if blocks are not required to be in list
+function taxonomy_tids_by_vocabulary($vid) {
+  $result = db_query('SELECT t.tid FROM {term_data} t WHERE t.vid = %d ORDER BY t.tid ASC', $vid);
+  $tids = array();
+  while($row = db_fetch_array($result)) {
+    $tids[] = $row['tid'];
+  }
+  return $tids;
+}
+
+function training_content_by_user($uid = NULL) {
+  if(is_null($uid)) {
+    global $user;
+    $uid = $user->uid;
+  }
+
+  if(is_numeric($uid) && $uid > 0) {
+    $profile = content_profile_load('uprofile', $user->uid);
+    $cause_terms = taxonomy_node_get_terms_by_vocabulary($profile, 8);
+    
+    $tabs = array();
+    foreach($cause_terms as $term) {
+      $tabs[] = array(
+        'bid' => 'training_content_delta_tcterm_' . $term->tid,
+        'hide_title' => TRUE,
+        'title' => $term->name,
+        'weight' => -100,
+        'type' => 'block',
+      );
+    }
+    $quicktabs['qtid'] = 'trainingcontent';
+    $quicktabs['tabs'] = $tabs;
+    $quicktabs['style'] = 'Navlist';
+    $quicktabs['ajax'] = TRUE;
+    return theme('quicktabs', $quicktabs);
+  }
+  else {
+    return 'No training content available.';
+  }
+}
+
+function training_content_user_block() {
+  return training_content_by_user();
+}
+
+/**
+ * Block callback for Training Content for $term->name -
+ * renders the appropriate Quicktabs, Mini-Panels & Views for a given taxonomy term.
+ * Requires interface with Panel context.
+ */
+function training_content_term_block($tid) {
+ $content = '';
+ $content .= '<div class="tc-block-column1"><div class="tc-block-column2-inner">';
+ 
+ // sets $args for use in view_unless_empty() wrapper function
+ $args = array($tid);
+
+ // shows Recommended Books view
+ $content .= view_unless_empty('argument_books', 'block_1', 'Books', $args);
+ 
+ // shows Related Courses view
+ $content .= view_unless_empty('argument_courses', 'block_1', 'Courses', $args);
+ 
+ // shows Blogs/Articles view
+ $content .= view_unless_empty('argument_frontpage', 'block_1', 'Blogs and Articles', $args);
+ 
+ $content .= '</div></div>';
+ 
+ $content .= '<div class="tc-block-column2"><div class="tc-block-column2-inner">';
+ 
+ // shows Podcasts view
+ $content .= view_unless_empty('argument_taxonomy_podcasts', 'block_1', 'Podcast', $args);
+ 
+ // shows Recommended Video view (can't do Quicktabs without an argument from path)
+ $content .= view_unless_empty('argument_video', 'block_1', 'Video', $args);
+ 
+ // shows Recommended Audio view (can't do Quicktabs without an argument from path)
+ $content .= view_unless_empty('argument_audio', 'block_1', 'Audio', $args);
+ 
+ // shows Recommended Links view
+ $content .= view_unless_empty('argument_taxonomy_weblinks', 'block_1', 'Links', $args);
+ 
+ $content .= '</div></div>';
+ return $content;
+}
+
+// wraps Views' rendering functions to only show view when it has content
+function view_unless_empty($view_name, $display, $title, $args = array()) {
+  if($view = views_get_view($view_name)) {
+    $view->set_display($display);
+    if(!empty($args)) { 
+      $view->set_arguments($args);
+    }
+    $view_output = $view->preview();
+    if (!empty($view->result) || $view->display_handler->get_option('empty') || !empty($view->style_plugin->definition['even empty'])) {
+     $output = '<h2 class="pane-title">' . $title . '</h2>' . $view_output;
+    }
+    else {
+      $output = '';
+    }
+  }
+  return $output;
+}

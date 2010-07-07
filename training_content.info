@@ -1,0 +1,9 @@
+; $Id$
+name = "Training Content"
+description = "Integrates with Views and Quicktabs to provide a Training Content block for the training section of the Find Your Calling application."
+package = Custom Modules
+dependencies[] = taxonomy
+dependencies[] = views
+dependencies[] = quicktabs
+core = 6.x
+version = 6.x-1.0
