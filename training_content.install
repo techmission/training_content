@@ -1,5 +1,5 @@
 <?php 
 // $Id$
 function training_content_install() {
-	drupal_set_message("The Training Content module has been enabled. The main block that this module provides is --block name--, which is viewable at the path --path name--.");
+  drupal_set_message("The Training Content module has been enabled. This module provides a dynamic block of recommended content for each user at training-content/%.");
 }

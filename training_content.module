@@ -14,8 +14,38 @@ function training_content_help($path, $arg) {
   return $output;
 }
 
-/* TODO: Implement hook_menu() to have a page callback on which to render the Quicktabs block
-   that loads the training content for each user by uid. */
+/**
+ * Implements hook_menu().
+*/
+function training_content_menu() {
+  $items = array();
+
+  $items['training-content/%user_uid_optional'] = array(
+    'page callback' => 'training_content_page',
+    'page arguments' => array(1),
+    'access callback' => 'training_content_access',
+    'access arguments' => array(1),
+    'type' => MENU_CALLBACK,
+    );
+  
+  return $items;
+}
+
+function training_content_access($account) {
+  global $user;
+  // TODO: create a permission "view all training content" that excludes from this check
+/*
+  if($account->uid == $user->uid) {
+    return TRUE;
+  }
+  else {
+    return FALSE;
+  }
+*/
+
+// Temporary - for testing purposes - show to everyone
+  return TRUE;
+}
 
 /**
  * Implements hook_block().
@@ -28,19 +58,6 @@ function training_content_block($op = 'list', $delta = 0, $edit = array()) {
       'status' => 0, 
       'cache' => BLOCK_NO_CACHE,
     );
-    // load the first two terms from the cause/topic vocabulary (8)
-    //$tids = array(4238, 562, 6954);
-    /* $vid = 8;
-    $tids = taxonomy_tids_by_vocabulary($vid);
-    foreach($tids as $tid) {
-      $blocks['tcterm_' . $tid] = array(
-        'info' => t('Training Content: Term') . ' ' . $tid,
-        'weight' => 0, 
-        'status' => 0, 
-        'cache' => BLOCK_NO_CACHE,
-      ); 
-    } */
-    // TODO: see if block caching will work for these blocks or if the JS will break
     return $blocks;
   }
   elseif ($op == 'view') {
@@ -62,16 +79,6 @@ function training_content_block($op = 'list', $delta = 0, $edit = array()) {
   }
 }
 
-// function to list tids will not be necessary if blocks are not required to be in list
-function taxonomy_tids_by_vocabulary($vid) {
-  $result = db_query('SELECT t.tid FROM {term_data} t WHERE t.vid = %d ORDER BY t.tid ASC', $vid);
-  $tids = array();
-  while($row = db_fetch_array($result)) {
-    $tids[] = $row['tid'];
-  }
-  return $tids;
-}
-
 function training_content_by_user($uid = NULL) {
   if(is_null($uid)) {
     global $user;
@@ -79,7 +86,7 @@ function training_content_by_user($uid = NULL) {
   }
 
   if(is_numeric($uid) && $uid > 0) {
-    $profile = content_profile_load('uprofile', $user->uid);
+    $profile = content_profile_load('uprofile', $uid);
     $cause_terms = taxonomy_node_get_terms_by_vocabulary($profile, 8);
     
     $tabs = array();
@@ -103,6 +110,12 @@ function training_content_by_user($uid = NULL) {
   }
 }
 
+function training_content_page($account) {
+  return training_content_by_user($account->uid);
+}
+
+/* Content for Training Content block -
+   shows training resources for current user */
 function training_content_user_block() {
   return training_content_by_user();
 }
