@@ -138,7 +138,7 @@ function training_content_user_block() {
  */
 function training_content_term_block($tid) {
  $content = '';
- $content .= '<div class="tc-block-column1"><div class="tc-block-column2-inner">';
+ $content .= '<div class="tc-block-column1"><div class="tc-block-column1-inner">';
  
  // sets $args for use in view_unless_empty() wrapper function
  $args = array($tid);
