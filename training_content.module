@@ -20,18 +20,23 @@ function training_content_help($path, $arg) {
 function training_content_menu() {
   $items = array();
 
-  $items['training-content/%user_uid_optional'] = array(
+  $items['training-content'] = array(
+    'page callback' => 'training_content_page',
+    'access callback' => 'training_content_access',
+    'type' => MENU_CALLBACK,
+  );
+	$items['training-content/%user_uid_optional'] = array(
     'page callback' => 'training_content_page',
     'page arguments' => array(1),
     'access callback' => 'training_content_access',
     'access arguments' => array(1),
     'type' => MENU_CALLBACK,
-    );
+  );
   
   return $items;
 }
-
-function training_content_access($account) {
+		
+function training_content_access($account = NULL) {
   global $user;
   // TODO: create a permission "view all training content" that excludes from this check
 /*
@@ -110,7 +115,13 @@ function training_content_by_user($uid = NULL) {
   }
 }
 
-function training_content_page($account) {
+/* Callback for Training Content page -
+   either shows training resources for current user
+	 or for user whose $account is passed in via argument */
+function training_content_page($account = NULL) {
+  if($account == NULL) {
+	  return training_content_by_user();
+	}
   return training_content_by_user($account->uid);
 }
 
