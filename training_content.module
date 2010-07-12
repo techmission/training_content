@@ -7,8 +7,8 @@
 function training_content_help($path, $arg) {
   $output = '';
   switch($path) {
-    case "admin/help#training_content":
-      $output = '<p>' . t("Provides the blocks necessary to provide Training Content for the Find Your Calling Facebook application.") . '</p>';
+    case 'admin/help#training_content':
+      $output = '<p>' . t('Provides the blocks necessary to provide Training Content for the Find Your Calling Facebook application.') . '</p>';
       break;
   }
   return $output;
@@ -22,7 +22,7 @@ function training_content_menu() {
 
   $items['training-content'] = array(
     'page callback' => 'training_content_page',
-    'access callback' => 'training_content_access',
+    'access arguments' => array('access content'),
     'type' => MENU_CALLBACK,
   );
 	$items['training-content/%user_uid_optional'] = array(
@@ -39,17 +39,12 @@ function training_content_menu() {
 function training_content_access($account = NULL) {
   global $user;
   // TODO: create a permission "view all training content" that excludes from this check
-/*
   if($account->uid == $user->uid) {
     return TRUE;
   }
   else {
     return FALSE;
   }
-*/
-
-// Temporary - for testing purposes - show to everyone
-  return TRUE;
 }
 
 /**
@@ -146,11 +141,8 @@ function training_content_term_block($tid) {
  // shows Recommended Books view
  $content .= view_unless_empty('argument_books', 'block_1', 'Books', $args);
  
- // shows Related Courses view
- $content .= view_unless_empty('argument_courses', 'block_1', 'Courses', $args);
- 
  // shows Blogs/Articles view
- $content .= view_unless_empty('argument_frontpage', 'block_1', 'Blogs and Articles', $args);
+ $content .= view_unless_empty('argument_taxonomy_page', 'block_1', 'Blogs and Articles', $args);
  
  $content .= '</div></div>';
  
@@ -158,6 +150,9 @@ function training_content_term_block($tid) {
  
  // shows Podcasts view
  $content .= view_unless_empty('argument_taxonomy_podcasts', 'block_1', 'Podcast', $args);
+ 
+  // shows Related Courses view
+ $content .= view_unless_empty('argument_courses', 'block_1', 'Courses', $args);
  
  // shows Recommended Video view (can't do Quicktabs without an argument from path)
  $content .= view_unless_empty('argument_video', 'block_1', 'Video', $args);
