@@ -14,6 +14,22 @@ function training_content_help($path, $arg) {
   return $output;
 }
 
+/** 
+ * Implements hook_url_outbound_alter().
+*/
+function training_content_url_outbound_alter(&$path, &$options, $original_path) {
+  if((arg(0) == 'training-content') || (arg(0) == 'quicktabs' && arg(1) == 'ajax' && arg(2) == 'block' && stristr(arg(3), 'training_content')) || (isset($_GET['fb-theme']) && $_GET['fb-theme'] == 1)) {
+	  if(empty($options['query'])) { 
+		  $options['query'] = 'fb-theme=1';
+		}
+		else { 
+		  if(stristr($options['query'], 'page=') == FALSE) {
+			  $options['query'] .= '&fb-theme=1';
+			}
+		}
+	}
+}
+
 /**
  * Implements hook_menu().
 */
@@ -87,7 +103,8 @@ function training_content_by_user($uid = NULL) {
 
   if(is_numeric($uid) && $uid > 0) {
     $profile = content_profile_load('uprofile', $uid);
-    $cause_terms = taxonomy_node_get_terms_by_vocabulary($profile, 8);
+    $cause_terms = training_content_get_terms_by_vocabulary($profile, 8);
+		drupal_add_js(drupal_get_path('module', 'training_content') . '/js/training_content_child.js', 'module', 'header', FALSE, FALSE, FALSE);
     
     $tabs = array();
     foreach($cause_terms as $term) {
@@ -106,7 +123,13 @@ function training_content_by_user($uid = NULL) {
     return theme('quicktabs', $quicktabs);
   }
   else {
-    return 'No training content available.';
+	  if($_SERVER['HTTP_HOST'] == 'www.urbanministry.org') {
+		  $voleng_domain = 'christianvolunteering';
+		}
+		elseif($_SERVER['HTTP_HOST'] == 'www.urbanresource.net') {
+		  $voleng_domain = 'ivolunteering';
+		}
+    return 'You don\'t have any training content available. <a href="http://facebook' . $voleng_domain . '.org">Click here</a> to take the personality test.';
   }
 }
 
@@ -149,7 +172,7 @@ function training_content_term_block($tid) {
  $content .= '<div class="tc-block-column2"><div class="tc-block-column2-inner">';
  
  // shows Podcasts view
- $content .= view_unless_empty('argument_taxonomy_podcasts', 'block_1', 'Podcast', $args);
+ $content .= view_unless_empty('argument_taxonomy_podcasts', 'panel_pane_1', 'Podcast', $args);
  
   // shows Related Courses view
  $content .= view_unless_empty('argument_courses', 'block_1', 'Courses', $args);
@@ -183,4 +206,14 @@ function view_unless_empty($view_name, $display, $title, $args = array()) {
     }
   }
   return $output;
+}
+
+// same as taxonomy_node_get_terms_by_vocabulary, but sorts by term name
+function training_content_get_terms_by_vocabulary($node, $vid, $key = 'tid') {
+  $result = db_query(db_rewrite_sql('SELECT t.tid, t.* FROM {term_data} t INNER JOIN {term_node} r ON r.tid = t.tid WHERE t.vid = %d AND r.vid = %d ORDER BY name', 't', 'tid'), $vid, $node->vid);
+  $terms = array();
+  while ($term = db_fetch_object($result)) {
+    $terms[$term->$key] = $term;
+  }
+  return $terms;
 }
